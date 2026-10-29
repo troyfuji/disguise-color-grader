@@ -16,7 +16,6 @@ A web page that gives colourists professional, colourist-style primary grading c
 6. `docs/BUILD_PLAN.md` — stack, repo layout, phases
 7. `docs/mockup/index.html` — open in a browser for the visual target
 
-
 ## Rules
 
 - **Standalone server, not a Designer plugin.** `server/` is the only code that talks to disguise (one Live Update socket, all Python calls, layer selection, budget). The panel (`src/`) talks only to our server over `/api/panel` (`shared/protocol.ts`). Never open a disguise connection from the panel.
@@ -45,6 +44,7 @@ npm run mock         # mock Director only
 npm test             # vitest
 npm run build
 npm start            # standalone server: dist/ + disguise link on :8080
+npm run package      # portable Windows ZIP with bundled node.exe (scripts/Make-Portable.ps1)
 ```
 
 Phase 0 Python probes go in `probes/` and are run with `C:\dev\d3-plugin-toolkit` — follow its CLAUDE.md pre-flight rules and `probes/README.md`.

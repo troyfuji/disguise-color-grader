@@ -56,9 +56,25 @@ npm run mock         # mock Director only
 npm test             # vitest: maths, budget, presets, server ⇄ mock integration
 npm run build        # typecheck + build the panel into dist/
 npm start            # production: the server alone serves dist/ on http://0.0.0.0:8080
+npm run package      # tests + build + portable Windows ZIP (see below)
 ```
 
 The server reads `HOST`, `PORT` and `DIRECTOR` from the environment; `--host`, `--port` and `--director` flags override them (also `--static`, `--state`, `--presets`). `npm run mock -- --designer-edits` also simulates someone editing the layer in Designer.
+
+## Portable Windows ZIP
+
+`npm run package` (or `.\scripts\Make-Portable.ps1`, add `-SkipTests` to skip the tests) builds `ColourGrader-v<version>-win-x64.zip` in the project root, about 33 MB. It carries its own `node.exe`, copied from this machine, so the target laptop needs nothing installed:
+
+```text
+ColourGrader\
+  Start-Grader.cmd / .ps1   launcher (-Port, -BindHost, -Director)
+  README.txt                quick start for operators
+  node\node.exe             Node runtime + licence
+  app\                      server\, shared\, dist\, node_modules\ws, package.json
+  app\data\                 created on first run: presets.json, server-state.json
+```
+
+Unzip it somewhere writable, double-click `Start-Grader.cmd`, and open `http://localhost:8080`. The window lists the address to use from a tablet. It runs the production server only, so there's one port and no Vite. To upgrade, copy `app\data\` from the old folder into the new one. The ZIP isn't committed (`.gitignore`).
 
 ## How it fits together
 
