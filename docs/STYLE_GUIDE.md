@@ -1,10 +1,10 @@
 # Style Guide — disguise Colour Grader
 
-The product should feel familiar to a colourist who lives in DaVinci Resolve's Color page: dark, quiet, dense, with colour used only where it carries meaning. This guide describes that look and the rules for building it.
+The product should feel familiar to a colourist who lives in professional grading software: dark, quiet, dense, with colour used only where it carries meaning. This guide describes that look and the rules for building it.
 
-> **Inspired by, not copied from.** Match the *feel* of Resolve's Primaries panel (layout, density, contrast, control behaviour). Do **not** use Blackmagic Design or DaVinci logos, product names, icons, or artwork anywhere in the UI. All icons are our own or from an open icon set.
+> **Our own design.** Match the *feel* of a professional primary grading panel (layout, density, contrast, control behaviour). Do **not** use any other company's logos, product names, icons, or artwork anywhere in the UI. All icons are our own or from an open icon set.
 
-Colour values below were sampled from the reference screenshots in this folder (`adjustment-controls-in-color-wheel-of-davinci-resolve.jpg` and the Resolve 18 Primaries screenshot). Treat them as the starting palette; tune by eye against the references.
+The colour values below are the project's palette; tune them by eye on the target displays.
 
 ---
 
@@ -28,7 +28,7 @@ Define these as CSS custom properties (or the equivalent in the chosen UI framew
 | --- | --- | --- |
 | `--surface-app` | `#28282E` | Main panel background (the most common colour in the reference) |
 | `--surface-strip` | `#2F3036` | Parameter strips (the Temp/Tint row, the Sat/Hue row) |
-| `--surface-header` | `#212126` | Panel title bar ("Primaries – Color Wheels" row) |
+| `--surface-header` | `#212126` | Panel title bar ("Color Wheels" row) |
 | `--surface-footer` | `#17181A` | Status bar at the bottom of the window |
 | `--surface-field` | `#1F1F1F` | Numeric value fields |
 | `--surface-well` | `#0A0A0B` | Wheel bezel shadow, jog-wheel track |
@@ -62,8 +62,9 @@ Define these as CSS custom properties (or the equivalent in the chosen UI framew
 | --- | --- |
 | Temp | `#2673D5` → `#DE891F` (blue → amber) |
 | Tint | `#0CF463` → `#F10DAB` (green → magenta) |
-| Contrast, Shadows, Highlights | `#1F1F1F` → `#FFFFFF` (black → white) |
-| Saturation | grey → full-spectrum |
+| Brightness, Shadows, Highlights | `#1F1F1F` → `#FFFFFF` (black → white) |
+| Contrast | `#FFFFFF` → `#1F1F1F` (white → black), `--hint-contrast` |
+| Saturation | grey (black & white) → muted red at neutral → fully saturated red |
 
 ### Status
 
@@ -86,7 +87,7 @@ Define these as CSS custom properties (or the equivalent in the chosen UI framew
 
 ## 3. Typography
 
-- **Font:** a clean humanist sans. Use **Open Sans** (bundled, OFL licence) with system sans as fallback. Do not ship Resolve's own UI font.
+- **Font:** a clean humanist sans. Use **Open Sans** (bundled, OFL licence) with system sans as fallback. Do not ship another product's UI font.
 - **Numbers:** `font-variant-numeric: tabular-nums;` so values don't jitter while dragging.
 
 | Role | Size | Weight | Colour |
@@ -103,14 +104,14 @@ Define these as CSS custom properties (or the equivalent in the chosen UI framew
 
 Reference layout (top to bottom), at a base width of 1300 px:
 
-1. **Toolbar** (56 px): page icons with thin vertical dividers. Primaries is active; Looks, A/B, Copy grade and Curves are shown disabled to reserve their place.
-2. **Panel header** (56 px, `--surface-header`): title on the left ("Primaries – Color Wheels"), then the layer picker and the Source toggle, grade reset at far right.
+1. **Toolbar** (56 px): page icons with thin vertical dividers. Color Wheels and Presets are page tabs (the active one lit). Unbuilt pages are not shown.
+2. **Panel header** (56 px, `--surface-header`): title on the left ("Color Wheels"), then the layer picker and the Source toggle, grade reset at far right.
 3. **Top parameter strip** (72 px, `--surface-strip`): Temp · Tint · Cont · Bright, evenly spaced.
 4. **Wheel row**: four equal columns — Lift, Gamma, Gain, Offset. Each column: name + reset icon → wheel → numeric readouts (Y R G B, or R G B for Offset) → master jog wheel.
 5. **Bottom parameter strip** (72 px, `--surface-strip`): Sat on the left, Legal range button on the right.
 6. **Status bar** (40 px, `--surface-footer`): connection state, Director address, target layer, version.
 
-Resolve controls that disguise can't do (Pivot, MD, Col Boost, Shad, Hi/Light, Hue, L. Mix) are **not shown at all**. Their absence leaves the strips a little airier than Resolve's — keep the even spacing rather than filling the gaps.
+Grading controls that disguise can't do (Pivot, MD, Col Boost, Shad, Hi/Light, Hue, L. Mix) are **not shown at all**. Their absence leaves the strips a little airier than a full grading panel — keep the even spacing rather than filling the gaps.
 
 Spacing uses an **8 px grid**. Column gutters 16 px; inner padding 16 px.
 
@@ -178,7 +179,6 @@ Built from the outside in:
 | Hover | Field border lightens to `#3A3A40`; icon goes `--icon-active` |
 | Dragging | Value text stays `--text-value`; cursor hidden while scrubbing |
 | Modified from neutral | No colour change on the field itself; red dot on the page icon |
-| Coming later (toolbar pages) | Icon at 35% opacity, not interactive, tooltip "Coming later" |
 | Disconnected | Whole panel at 50% opacity; status bar badge `--status-warning-bg` "NOT CONNECTED" |
 | Value sent but not confirmed | Faint pulse on the field until the matching update comes back from disguise |
 

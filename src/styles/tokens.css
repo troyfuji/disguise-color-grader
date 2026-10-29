@@ -1,0 +1,90 @@
+/* Design tokens from docs/STYLE_GUIDE.md. Components use these only — never raw hex. */
+
+:root {
+  /* Surfaces (§2) */
+  --surface-app: #28282e;
+  --surface-strip: #2f3036;
+  --surface-header: #212126;
+  --surface-footer: #17181a;
+  --surface-field: #1f1f1f;
+  --surface-well: #0a0a0b;
+  --surface-bezel: #1b1b1f;
+  --surface-segment-on: #46464c;
+  --surface-menu-hover: #33333a;
+  --border-field: #070707;
+  --border-field-hover: #3a3a40;
+  --divider: #48494c;
+  --rule: #2e3036;
+
+  /* Text and icons */
+  --text-primary: #ffffff;
+  --text-value: #f1f1f0;
+  --text-label: #939293;
+  --text-label-strip: #9c9b9c;
+  --icon-inactive: #898988;
+  --icon-active: #ffffff;
+
+  /* Channels */
+  --channel-y: #ffffff;
+  --channel-r: #ff1a00;
+  --channel-g: #0ad239;
+  --channel-b: #205bd7;
+
+  /* Wheel */
+  --puck: #dddddf;
+  --master-arc: #dddddf;
+  --crosshair: rgb(255 255 255 / 0.35);
+  --disc-centre: #3a3a40;
+  --disc-mid: #2c2c32;
+  --disc-edge: #26262b;
+  --jog-ridge-light: #2a2a2e;
+  --jog-ridge-dark: #111113;
+
+  /* Hint gradients (2 px bars under parameters) */
+  --hint-temp: linear-gradient(90deg, #2673d5, #de891f);
+  --hint-tint: linear-gradient(90deg, #0cf463, #f10dab);
+  --hint-luma: linear-gradient(90deg, #1f1f1f, #ffffff);
+  --hint-contrast: linear-gradient(90deg, #ffffff, #1f1f1f);
+  --hint-sat: linear-gradient(90deg, #808080, #9a6a6a 50%, #ff1a00); /* black & white → fully saturated */
+  --hue-ring: conic-gradient(from 340deg, #ff0000, #ff00ff, #0000ff, #00ffff, #00ff00, #ffff00, #ff0000);
+
+  /* Status */
+  --status-modified: #e5402a;
+  --status-warning-bg: #a74331;
+  --status-connected: #0ad239;
+  --status-connecting: #de891f;
+  --status-live: #b3261e;
+  --status-live-hold: rgb(179 38 30 / 0.6);
+  --status-bypass: #8a5a12;
+  --switch-on: #3a5a3f;
+  --shadow-popover: rgb(0 0 0 / 0.5);
+
+  /* Typography (§3) */
+  --font-ui: 'Open Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fs-title: 16px;
+  --fs-wheel-name: 15px;
+  --fs-label: 14px;
+  --fs-value: 14px;
+  --fs-button: 13px;
+  --fs-status: 12px;
+  --fs-badge: 11px;
+  --fs-glyph: 18px;
+
+  /* Layout (§4, UI_SPEC §1) */
+  --grid: 8px;
+  --gutter: 16px;
+  --h-toolbar: 56px;
+  --h-header: 56px;
+  --h-strip: 72px;
+  --h-status: 40px;
+  --touch-min: 44px;
+  --field-w: 92px;
+  --field-h: 40px;
+  --radius-field: 3px;
+
+  /* Motion (§7) */
+  --t-hover: 80ms;
+  --t-fade: 150ms;
+  --dim: 0.5;
+  --later: 0.35;
+}

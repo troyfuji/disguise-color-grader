@@ -25,7 +25,7 @@ disguise's docs state the Python endpoint "MUST NOT be polled" and is not suppor
 
 | Python property | Type | Designer name | Panel control |
 | --- | --- | --- | --- |
-| `ccWhiteBalanceMode` | int | White balance preset | Hidden, always 0 |
+| `ccWhiteBalanceMode` | int | White balance preset | Hidden, set to 1 (Custom) |
 | `ccKelvin` | float | Kelvin | Temp |
 | `ccTint` | float | Tint | Tint |
 | `ccContrast` | float | Contrast | Cont |
@@ -41,7 +41,7 @@ disguise's docs state the Python endpoint "MUST NOT be polled" and is not suppor
 | `outputLevelHighClamp` | float | Output High Clamp | Legal range |
 | `source` | ContentSource | Source | Source toggle |
 
-`ccWhiteBalanceMode` options: 0 None, 1 Custom, 2 Daylight, 3 Shade, 4 Cloudy, 5 Tungsten, 6 Florescent, 7 Flash. With a named preset selected, Kelvin and Tint can't be keyframed — so the panel keeps it at 0.
+`ccWhiteBalanceMode` options: 0 None, 1 Custom, 2 Daylight, 3 Shade, 4 Cloudy, 5 Tungsten, 6 Florescent, 7 Flash. **Kelvin and Tint only take effect with 1 (Custom)** (operator finding, 2026-10-29), so the server writes 1 once when a layer loads (only if it isn't already 1) and `toDisguise()` always sends 1.
 
 **VERIFY:** ranges and defaults of every property; the JSON shape of `Colour` / `HDRColour` (expected `{r, g, b, a}`); the values `source` accepts.
 
@@ -119,9 +119,11 @@ Rules:
 
 The panel uses it **only** at connect time to list ColourAdjust layers (track, layer name, index/uid, current source).
 
-**VERIFY:** whether a browser page on another origin can POST here (CORS). If not, use the dev proxy in Vite and a tiny static+proxy server in production (see `BUILD_PLAN.md`).
+Only the colour-grader server calls this endpoint (D19), so browser CORS does not apply.
 
-## 5. Vue composable
+## 5. Vue composable (not used)
+
+The server uses its own thin client (`server/director/liveUpdate.ts`) for exact control of the budget. Kept here for reference.
 
 disguise publishes `@disguise-one/vue-liveupdate` (ISC licence, install from GitHub):
 
@@ -171,7 +173,7 @@ Look for a layer-level enable/mute/bypass property first (check `Layer` in `d3.p
 
 These implement the API budget in `PRODUCT_SPEC.md` §7 — treat them as hard limits.
 
-1. One Live Update connection per page.
+1. One Live Update connection per colour-grader server. Panels never connect to disguise.
 2. Throttle writes: at most one set per property every 50 ms, batched into one message per tick; always send the latest value; send the final value on gesture end. Nothing is sent while idle.
 3. Undo, Redo, Bypass and Reset send one batched `set`, never one message per property.
 4. Unsubscribe everything for the previous layer when the user picks a new one, and everything on page unload.
@@ -181,3 +183,67 @@ These implement the API budget in `PRODUCT_SPEC.md` §7 — treat them as hard l
 8. On disconnect: freeze the UI, show the overlay, and resubscribe + re-read all values on reconnect before allowing edits.
 9. Ignore echoed `valuesChanged` for values we just sent (compare against the last sent value) so the UI doesn't jump while dragging.
 10. Log every outgoing message count per second in dev builds, and fail a test if any rule above is exceeded.
+
+## 8. Phase 0 findings (measured 2026-10-29)
+
+Measured on a live Director (localhost) on track `color`, which has one ColourAdjust layer (`ColourAdjust`, beats 0–60, uid `0x9ae8e3b4bfbcdb7d`), with the playhead stopped at 0. Probes: `probes/probe_colouradjust_sequences.py` and `probes/probe_colouradjust_values.py` (Python, read-only), plus Live Update set/read-back/restore scripts. Every value was restored afterwards and checked through Python.
+
+### Field sequences (Q1)
+
+- The sequence name is the Python property name. **Colour fields split per channel**: `shadowColour.r/.g/.b/.a`, and likewise for `midtoneColour` and `gainColour`. The panel writes r, g and b and never touches alpha.
+- `source` splits into `source.arrow` (uint), `source.isExplicitEffectMode` (uint, Designer label "from background") and `source.texture` (DxTexture resource).
+- Every numeric field is a **`KeyFloat`** (float/uint/ubyte), so `findSequence("<name>").sequence.key(0).v` is a safe read and write path. `mapping` and `source.texture` are resource sequences and are never touched.
+- A new layer has **one key per field at the layer start, with `disableSequencing = true`** on every field.
+- `oututLevelClampEnable` is a ubyte and is sent as 0/1.
+- Other sequences on the layer: `blendMode`, `brightness` (layer master), `tint.r/g/b/a`.
+- Live Update object `getByUID(0x<16 hex>)` works for the layer.
+
+### Defaults (Q2)
+
+| Field | Default | Note |
+| --- | --- | --- |
+| `ccKelvin` | **5000** | not 6500 |
+| `ccContrast` | **0** | neutral is 0; the panel maps Cont 1.000 → 0 |
+| `ccSaturation` | **0** | neutral is 0; the panel shows disguise units, −100 to +100 |
+| `ccTint`, `ccBrightness`, `ccWhiteBalanceMode` | 0 | |
+| `shadowColour` | 0, 0, 0 (a 0) | |
+| `midtoneColour`, `gainColour` | 1, 1, 1 (a 1) | |
+| `outputLevelLow` / `High` | 0 / 1 | |
+| `outputLevelLowClamp` / `HighClamp` | 0 / 1 | |
+| `oututLevelClampEnable` | 0 | |
+| `source.isExplicitEffectMode` | 0 | |
+
+**No clamping on write.** Live Update `set` stored every test value as sent: Kelvin 500 and 40000; Contrast −2; Saturation −0.5 and 5; Shadow −0.1 and −2; Highlight 1.5 and −0.5; Midtone 0 and 2; Output Low −0.2; Output High 1.5. Values are stored as **float32** (0.3 reads back as 0.30000001192…). Whether out-of-range values *render* as expected still needs a picture.
+
+### Source (Q4)
+
+`source.isExplicitEffectMode` is settable over Live Update: 1 = from background, 0 = arrow/texture.
+
+### Live layers at the playhead (Q5)
+
+This subscription works and pushes on change:
+
+```text
+object:   transportManager:default
+property: [{"uid": "0x%016x" % l.uid, "name": l.name, "track": object.player.track.description}
+           for l in object.player.track.getLeafLayers(ColourAdjustModule)
+           if l.contains(object.player.tRender)]
+```
+
+It returned `[{"track": "color", "uid": "0x9ae8e3b4bfbcdb7d", "name": "ColourAdjust"}]`. Formatting the uid as a hex string avoids large-int precision loss. In Python, `Track.getLeafLayers` **requires** a type argument (`getLeafLayers(d3.ColourAdjustModule)`); calling it without one raises "Incorrect number of arguments".
+
+### Bypass (Q7)
+
+Bypass is `object.renderEnable` (`SuperLayer.renderEnable`): setting it `false` stops the module rendering (`object.module.isRendering` reads `false`), and `true` restores it. It is one write that never touches keyframes. **Not** `object.render`: that flag reads back `false` when set, but the module keeps rendering, so the grade stays on screen (operator report, confirmed 2026-10-29).
+
+### End-to-end
+
+The colour-grader server, connected to this Director, discovered the layer, loaded a neutral grade (Temp 5000, Cont 1.000, Sat 50), wrote an edit as one `set` message, toggled Bypass, and restored everything. Director traffic for the whole run was 6 Live Update messages (4 sets) and 1 Python call.
+
+### Still open
+
+- **Q3:** the Levels formula and Midtone direction (`n^(1/M)` vs `n^M`). Needs a picture or Colour Inspector readings.
+- ~~Contrast/Saturation scale~~ — resolved: the panel uses disguise's own units with Designer's ranges: Kelvin 800…14000, Tint −50…+50, Contrast −50…+50, Brightness −50…+50, Saturation −100…+100 (operator, 2026-10-29). There is no API to read these ranges.
+- **Q6:** keyframe at the playhead. Every field ships with sequencing disabled, so FR17 would first have to enable sequencing on a field. That is a project change, and it needs a product decision before it is probed.
+- **Behaviour during playback**, and the full-budget playback test.
+- **The `d3.pyi` gap:** `layer.sequences` (named in the toolkit's reference.md and in the official guide) is absent from the stub. The probes used `Layer.nSequences()` and `Layer.sequence(i)`.

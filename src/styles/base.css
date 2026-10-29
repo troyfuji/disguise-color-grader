@@ -1,0 +1,29 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--surface-app);
+  color: var(--text-value);
+  font-family: var(--font-ui);
+  font-size: var(--fs-value);
+  font-variant-numeric: tabular-nums;
+  -webkit-user-select: none;
+  user-select: none;
+  /* no pull-to-refresh or overscroll bounce on the panel (UI_SPEC §3) */
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  min-height: 100%;
+}
+
+button {
+  font: inherit;
+}

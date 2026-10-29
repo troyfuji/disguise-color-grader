@@ -1,6 +1,6 @@
 # UI Spec — disguise Colour Grader
 
-The single main screen, modelled on Resolve's **Primaries – Color Wheels** panel (reference images in the project root). Look and feel: `STYLE_GUIDE.md`. Visual reference you can click: `docs/mockup/index.html`.
+The main screens: **Color Wheels** and **Presets**. Look and feel: `STYLE_GUIDE.md`. Visual reference you can click: `docs/mockup/index.html`.
 
 ---
 
@@ -8,18 +8,20 @@ The single main screen, modelled on Resolve's **Primaries – Color Wheels** pan
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│ TOOLBAR  [Primaries●] [Looks] [A/B] [Copy] [Curves]   ↶ ↷  [Bypass] [SAFE🔒] │ 56 px
+│ TOOLBAR  [Wheels●] [Presets]                             ↶ ↷  [Bypass] [SAFE🔒] │ 56 px
 ├──────────────────────────────────────────────────────────────────────────┤
-│ HEADER   Primaries – Color Wheels   Layer: [LED Main ▾]  Source: [BG|TEX] ⟲ │ 56 px
-├──────────────────────────────────────────────────────────────────────────┤
-│ TOP STRIP     Temp [6500]     Tint [0.00]     Cont [1.000]   Bright [0.00] │ 72 px
+│ HEADER   Color Wheels   Layer: [LED Main ▾]  Source: [BG|TEX] ⟲ │ 56 px
 ├──────────────────────────────────────────────────────────────────────────┤
 │   Lift ⟲          Gamma ⟲          Gain ⟲          Offset ⟲              │
 │   ( wheel )       ( wheel )        ( wheel )       ( wheel )              │
 │  Y  R  G  B      Y  R  G  B       Y  R  G  B        R   G   B             │
 │  ▓▓▓▓ jog ▓▓▓    ▓▓▓ jog ▓▓▓      ▓▓▓ jog ▓▓▓      ▓▓▓ jog ▓▓▓            │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ BOTTOM STRIP   Sat [50.00]                               [Legal range ▸] │ 72 px
+│ SLIDERS  Cont   ──────●────── [0.00]    Temp ─────●────── [5000]          │
+│          Bright ──────●────── [0.00]    Tint ─────●────── [0.00]          │
+│                                         Sat  ─────●────── [0.00]          │
+├──────────────────────────────────────────────────────────────────────────┤
+│ BOTTOM STRIP                                             [Legal range ▸] │ 56 px
 ├──────────────────────────────────────────────────────────────────────────┤
 │ STATUS  ● Connected  director.local · LED Main / track_1        v0.1     │ 40 px
 └──────────────────────────────────────────────────────────────────────────┘
@@ -32,9 +34,9 @@ Base design width 1280 px. Must work from 1024 px (iPad landscape) to 1920 px. N
 ### 2.1 Toolbar
 
 - Icon buttons, 56 × 56 px hit area.
-- v1: only **Primaries** is active.
-- Looks, A/B, Copy grade, Curves: shown disabled at 35% opacity with tooltip "Coming later". They reserve the space so the layout doesn't change when they arrive.
-- A red dot on Primaries when the grade isn't neutral.
+- Page tabs: **Color Wheels** (circle icon) and **Presets** (four squares). The header title follows the page.
+- A/B, Copy grade and Curves are later goals and are not shown until they are built.
+- A red dot on Color Wheels when the grade isn't neutral.
 - Right end of the toolbar, always visible (PRODUCT_SPEC FR19–FR22):
 
 | Control | Behaviour |
@@ -47,14 +49,19 @@ Base design width 1280 px. Must work from 1024 px (iPad landscape) to 1920 px. N
 
 | Element | Behaviour |
 | --- | --- |
-| Title | "Primaries – Color Wheels" |
+| Title | "Color Wheels" |
 | **Layer picker** | Lists **only ColourAdjust layers live at the playhead** on the playing track: `track › layer name`. The list updates as the playhead moves (Live Update subscription, never polling). Nothing is selected automatically. Changing the layer unsubscribes the old one, loads the new one's values and returns the panel to Safe. Refresh item at the bottom re-runs discovery. |
 | **Source toggle** | Two-segment control: **Background** / **Texture** (labels to match the values disguise returns — VERIFY). Writes `source` immediately. Always visible (decision D5). |
 | Grade reset ⟲ | Resets the whole grade to neutral. Needs a confirm: second tap within 2 s, label changes to "Tap again to reset". |
 
-### 2.3 Top strip
+### 2.3 Sliders (under the wheels)
 
-Four parameters, evenly spaced: **Temp** (K, 0 decimals), **Tint** (2 dp), **Cont** (3 dp), **Bright** (2 dp). Each: label + value field + hint bar (`STYLE_GUIDE.md` §5).
+Horizontal sliders below the wheel row, in two halves that line up with the wheels:
+
+- **Left, under Lift and Gamma:** **Cont** (2 dp, −50 to +50, neutral 0), **Bright** (2 dp, −50 to +50, neutral 0).
+- **Right, under Gain and Offset:** **Temp** (K, 0 dp, 800 to 14000, linear, so neutral 5000 sits about a third along with more travel to the warm right), **Tint** (2 dp, −50 to +50, neutral 0), **Sat** (2 dp, −100 to +100, neutral 0).
+
+Each slider: label · track (6 px rail with the parameter's hint gradient, neutral tick, fill from neutral to the thumb, 44 px hit height) · value field · reset button (dimmed while at neutral). Dragging the track moves the value relative to where it was — touch-down never jumps it. Shift = fine (÷10), mouse wheel nudges, double-tap the track or label resets to neutral, tap the value field to type. Below 1024 px the halves stack.
 
 ### 2.4 Wheel row
 
@@ -62,15 +69,24 @@ Four equal columns. Each column, top to bottom:
 
 1. Name + reset icon.
 2. Wheel (diameter = column width − 48, max 220 px, min 140 px).
-3. Readouts: **Y R G B** for Lift/Gamma/Gain, **R G B** for Offset (as in Resolve). Each readout is an editable value field with a channel underline.
+3. Readouts: **Y R G B** for Lift/Gamma/Gain, **R G B** for Offset (as on standard grading panels). Each readout is an editable value field with a channel underline.
 4. Master jog wheel (full column width, 40 px tall).
 
 Neutral readouts: Lift 0.00, Gamma 0.00, Gain 1.00, Offset 25.00.
 
 ### 2.5 Bottom strip
 
-- **Sat** (2 dp, neutral 50.00).
 - **Legal range ▸** button opens a popover: Clamp on/off switch, Low and High value fields. A small badge "Clamp" shows in the strip while it's on.
+
+### 2.5a Presets page
+
+Shown by the four-squares tab; the header title reads **Presets** (Layer picker and Source stay; grade Reset is hidden).
+
+- **Save bar:** name field + **Save current grade**. Works in Safe (it never touches disguise); needs a loaded layer. Names are 1–60 characters and unique (case-insensitive).
+- **Cards** (grid, sorted by name): name, an **On layer** badge when the layer's grade matches, chips for what the preset changes (Temp, Tint, Cont, Bright, Sat, the wheels, Clamp), last-changed time.
+- **Apply** puts the preset on the layer as one edit (one batched write, one Undo step). Needs Live. The layer keeps its own Source.
+- **⋯** opens: **Update from current grade** and **Delete** (both need a second tap within 2 s), **Rename** (inline, Enter/blur saves, Esc cancels).
+- The list is kept by the server in `data/presets.json` and shared by every panel; changes appear on all panels at once.
 
 ### 2.6 Status bar
 
@@ -112,8 +128,8 @@ Puck is clamped to the disc. Readouts update live while dragging.
 
 ## 4. Connect flow
 
-1. First load: **Connect** dialog — Director address (e.g. `192.168.10.11` or `director.local`), Connect button. Remember the last address in `localStorage`.
-2. On connect: open the Live Update socket → run layer discovery (one Python execute call) → subscribe to the live-layer list → fill the layer picker. If exactly one ColourAdjust layer is live and it was the last-used layer, preselect it; otherwise the user picks.
+1. First load: **Connect** dialog — Director address (e.g. `192.168.10.11` or `director.local`), Connect button. The server remembers the last address and reconnects to it on start, so this dialog only appears when the server has no Director.
+2. On connect, the server opens its Live Update socket → runs layer discovery (one Python execute call) → subscribe to the live-layer list → fill the layer picker. If exactly one ColourAdjust layer is live and it was the last-used layer, preselect it; otherwise the user picks.
 3. Subscribe to the selected layer's values. The panel shows them when the first `valuesChanged` arrives, in **Safe**.
 
 ## 5. States
@@ -142,4 +158,4 @@ Every control has a plain-language tooltip for non-colourists, e.g. "Lift — sh
 
 ## 8. Not in v1
 
-Scopes, curves, looks, A/B, copy grade, multiple layers at once, hardware control, Resolve controls with no disguise equivalent (Pivot, MD, Col Boost, Shad, Hi/Light, Hue, L. Mix).
+Scopes, curves, A/B, copy grade, multiple layers at once, hardware control, grading controls with no disguise equivalent (Pivot, MD, Col Boost, Shad, Hi/Light, Hue, L. Mix).

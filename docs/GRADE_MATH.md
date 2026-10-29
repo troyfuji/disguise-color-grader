@@ -1,9 +1,9 @@
-# Grade Maths — Resolve-style controls → disguise Levels
+# Grade Maths — panel controls → disguise Levels
 
-The panel keeps its own **grade state** in Resolve-style units. A pure function turns that state into ColourAdjust values every time it changes. The UI never edits disguise values directly (decision D7).
+The panel keeps its own **grade state** in panel units. A pure function turns that state into ColourAdjust values every time it changes. The UI never edits disguise values directly (decision D7).
 
 ```
-UI gesture → GradeState (Resolve units) → toDisguise(GradeState) → Live Update set
+UI gesture → GradeState (panel units) → toDisguise(GradeState) → Live Update set
 ```
 
 All formulas work per channel `c ∈ {r, g, b}` on normalised values `x ∈ [0, 1]`.
@@ -23,11 +23,11 @@ interface WheelState {
 }
 
 interface GradeState {
-  tempK: number;        // Kelvin, neutral = disguise default (verify, expected 6500)
+  tempK: number;        // Kelvin, neutral 5000 (measured disguise default)
   tint: number;         // neutral 0
-  contrast: number;     // neutral 1.000
-  brightness: number;   // neutral = disguise default (verify)
-  saturation: number;   // display units, neutral 50.00
+  contrast: number;     // disguise units, neutral 0, range −50…+50
+  brightness: number;   // disguise units, neutral 0, range −50…+50
+  saturation: number;   // disguise units, neutral 0, range −100…+100
   lift: WheelState;     // neutral master 0.00
   gamma: WheelState;    // neutral master 0.00
   gain: WheelState;     // neutral master 1.00
@@ -37,7 +37,9 @@ interface GradeState {
 }
 ```
 
-Displayed numbers per wheel (as in Resolve): **Y R G B** = `master` and `master + color.c` (for Gain, `master × (1 + color.c)` is also acceptable — pick one and keep it).
+Displayed numbers per wheel (as on standard grading panels): **Y R G B** = `master` and `master + color.c` (for Gain, `master × (1 + color.c)` is also acceptable — pick one and keep it).
+
+**Chosen (2026-10-29):** Gain readouts use `master × (1 + color.c)`, matching the transfer function in §3. `color` is in normalised units for every wheel, Offset included. Offset readouts show `master + color.c × 100`, since Offset's `master` is in display units.
 
 ## 2. Wheel puck → RGB deltas
 
@@ -55,11 +57,11 @@ Hue axes on the ring, matching the reference wheel (math angles, counter-clockwi
 delta.c = k_wheel × a × cos(θ − axis.c) × 2/3
 ```
 
-The three deltas always sum to zero, so a puck move changes colour, not overall level. `k_wheel` sets sensitivity per wheel (start: Lift 0.25, Gamma 0.25, Gain 0.5, Offset 0.25; tune by eye against Resolve).
+The three deltas always sum to zero, so a puck move changes colour, not overall level. `k_wheel` sets sensitivity per wheel (start: Lift 0.25, Gamma 0.25, Gain 0.5, Offset 0.25; tune by eye with a colourist).
 
 The jog wheel changes `master` only. Drag sensitivity: 0.001 per px (Lift/Gamma/Offset), 0.002 per px (Gain); `Shift` divides by 10.
 
-## 3. Resolve-style transfer function
+## 3. Reference transfer function
 
 The panel models the grade as one affine step plus a gamma, per channel:
 
@@ -80,7 +82,7 @@ gamma:   out = y ^ (1 / e)
 - Lift moves blacks and holds white (`x = 1` stays 1 when G = 1 and O = 0).
 - Gain scales from black (`x = 0 → 0` when L = 0).
 - Offset shifts everything.
-- `offsetValue(d) = (d − 25) / 100` to start; calibrate against Resolve.
+- `offsetValue(d) = (d − 25) / 100` to start; calibrate by eye with a colourist.
 - `k_gamma` starts at 1.0; calibrate.
 
 ## 4. Mapping onto disguise Levels
@@ -107,11 +109,15 @@ Check: `x = Shadow → 0`, `x = Highlight → 1`, slope `1 / (Highlight − Shad
 
 Raising blacks (`b > 0`) gives a negative Shadow. If disguise rejects or clamps negative Shadow values:
 
-1. Set `Shadow.c = 0` and move the black lift into `OutputLow`.
-2. `OutputLow` is a single value, so only the **common** part of the lift goes there: `OutputLow = min over channels of b_c` (after normalising).
-3. The per-channel remainder stays in Shadow/Highlight. Accept that raising blacks with a colour tint is approximate in this case, and log it.
+1. Move the black lift into `OutputLow`. With any `OutputLow`/`OutputHigh`, the affine step is matched by `Shadow.c = (OutputLow − b_c) / a_c` and `Highlight.c = (OutputHigh − b_c) / a_c`.
+2. `OutputLow` is a single value. Choosing `OutputLow = max over channels of b_c` keeps every `Shadow.c ≥ 0` **with the slope still exact**. The channel with the highest lift has `Shadow = 0`; the others get a small positive Shadow.
+3. The only error is each channel's toe below its own Shadow, which clips to `OutputLow` instead of reaching `b_c`. Raising blacks with a colour tint is therefore slightly approximate in this case; `toDisguiseDetailed()` reports `approximate: true`.
 
-Same logic applies to `Highlight > 1` vs. `OutputHigh` if Highlight is capped.
+> Implementation note (2026-10-29): this replaces the first draft's `OutputLow = min over channels of b_c`. With `min`, the other channels still need negative Shadow, which would then be clamped and change the slope across the whole range. Using `max` limits the error to the toe.
+
+The same logic applies to Highlight if it is capped: `OutputHigh = min over channels of (a_c + b_c)`.
+
+Which limits apply is set by `LEVELS_MODEL.shadowMin` / `highlightMax` in `shared/disguise/paths.ts` (VERIFY).
 
 ### Clamp
 
@@ -123,10 +129,10 @@ Same logic applies to `Highlight > 1` vs. `OutputHigh` if Highlight is capped.
 | --- | --- | --- |
 | `tempK` | `ccKelvin` | direct |
 | `tint` | `ccTint` | direct (scale to be checked) |
-| `contrast` | `ccContrast` | direct if disguise neutral is 1.0, otherwise linear map |
-| `brightness` | `ccBrightness` | direct |
-| `saturation` | `ccSaturation` | `ccSaturation = sat / 50 × neutral` (if disguise neutral is 1.0 → `sat / 50`) |
-| — | `ccWhiteBalanceMode` | always `0` (None) |
+| `contrast` | `ccContrast` | direct (panel range −50…+50, neutral 0) |
+| `brightness` | `ccBrightness` | direct (panel range −50…+50) |
+| `saturation` | `ccSaturation` | direct (panel range −100…+100, neutral 0) |
+| — | `ccWhiteBalanceMode` | always `1` (Custom) — Temp/Tint only work with Custom |
 
 ## 6. Reading back (two-way sync)
 
