@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Colour Grader Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Visual mockup only: no disguise connection. Tokens mirror docs/STYLE_GUIDE.md */
+:root{
+  --surface-app:#28282E; --surface-strip:#2F3036; --surface-header:#212126; --surface-footer:#17181A;
+  --surface-field:#1F1F1F; --surface-well:#0A0A0B; --border-field:#070707; --divider:#48494C; --rule:#2E3036;
+  --text-primary:#FFFFFF; --text-value:#F1F1F0; --text-label:#939293; --text-label-strip:#9C9B9C;
+  --icon-inactive:#898988; --icon-active:#FFFFFF;
+  --channel-y:#FFFFFF; --channel-r:#FF1A00; --channel-g:#0AD239; --channel-b:#205BD7;
+  --status-modified:#E5402A; --status-warning-bg:#A74331; --status-connected:#0AD239;
+  --puck:#DDDDDF;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--surface-app);color:var(--text-value);
+  font-family:"Open Sans",system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-user-select:none;user-select:none;overscroll-behavior:none}
+.app{display:flex;flex-direction:column;min-height:100vh;max-width:1920px;margin:0 auto}
+/* toolbar */
+.toolbar{display:flex;height:56px;background:var(--surface-app);border-bottom:1px solid var(--surface-well)}
+.tool{width:72px;display:flex;align-items:center;justify-content:center;position:relative;border-right:1px solid var(--divider);color:var(--icon-inactive);cursor:default}
+.tool:first-child{border-left:none}
+.tool.active{color:var(--icon-active)}
+.tool.later{opacity:.35}
+.tool .dot{position:absolute;top:12px;right:18px;width:6px;height:6px;border-radius:50%;background:var(--status-modified);display:none}
+.tool.modified .dot{display:block}
+.tool svg{width:28px;height:28px}
+
+.tb-spacer{flex:1}
+.tb-right{display:flex;align-items:center;gap:8px;padding:0 12px}
+.tbtn{height:40px;min-width:44px;padding:0 12px;border:1px solid var(--border-field);border-radius:3px;background:var(--surface-field);color:var(--text-label);font:inherit;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;position:relative;overflow:hidden}
+.tbtn:disabled{opacity:.35;cursor:default}
+.tbtn.bypass.on{background:#8a5a12;color:#fff;border-color:#8a5a12}
+.tbtn.lock{min-width:104px;justify-content:center;letter-spacing:.06em;font-weight:600}
+.tbtn.lock.live{background:#B3261E;color:#fff;border-color:#B3261E}
+.tbtn.lock .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(179,38,30,.6)}
+.tbtn.lock span{position:relative}
+.app.safe .strip .param, .app.safe .wheels, .app.safe .right-tools, .app.safe .header .seg, .app.safe #resetAll,
+.app.bypass .strip .param, .app.bypass .wheels {opacity:.5;pointer-events:none}
+/* header */
+.header{display:flex;align-items:center;gap:20px;height:56px;padding:0 16px;background:var(--surface-header);border-bottom:1px solid var(--surface-well)}
+.header h1{font-size:16px;font-weight:600;color:var(--text-primary);margin:0;white-space:nowrap}
+.header .spacer{flex:1}
+.hlabel{font-size:14px;color:var(--text-label)}
+select.picker{appearance:none;-webkit-appearance:none;background:var(--surface-field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23898988' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center;
+  border:1px solid var(--border-field);border-radius:3px;color:var(--text-value);font:inherit;font-size:14px;height:40px;width:240px;padding:0 32px 0 12px}
+.seg{display:flex;background:var(--surface-field);border:1px solid var(--border-field);border-radius:3px;height:40px;padding:2px}
+.seg button{min-width:96px;border:0;border-radius:2px;background:transparent;color:var(--text-label);font:inherit;font-size:14px;cursor:pointer}
+.seg button.on{background:#46464C;color:var(--text-value)}
+.iconbtn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:var(--icon-inactive);cursor:pointer;border-radius:3px;font:inherit;font-size:12px}
+.iconbtn:hover{color:var(--icon-active)}
+.iconbtn.armed{color:var(--status-modified);width:auto;padding:0 8px}
+/* strips */
+.strip{display:flex;align-items:center;justify-content:space-around;gap:16px;min-height:72px;padding:8px 16px;background:var(--surface-strip);border-bottom:1px solid var(--surface-well);flex-wrap:wrap}
+.param{display:flex;align-items:center;gap:12px}
+.param label{font-size:14px;color:var(--text-label-strip);cursor:default}
+.field{position:relative;width:92px;height:40px;background:var(--surface-field);border:1px solid var(--border-field);border-radius:3px;
+  display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-value);cursor:ew-resize;touch-action:none}
+.field:hover{border-color:#3A3A40}
+.field input{width:100%;height:100%;background:transparent;border:0;color:inherit;font:inherit;text-align:center;outline:none}
+.fieldwrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+.hint{width:56px;height:2px;border-radius:1px}
+.right-tools{display:flex;align-items:center;gap:12px}
+.badge{font-size:11px;letter-spacing:.06em;padding:3px 8px;border-radius:3px;background:var(--status-warning-bg);color:#fff;display:none}
+.badge.show{display:inline-block}
+.btn{height:40px;padding:0 14px;border:1px solid var(--border-field);border-radius:3px;background:var(--surface-field);color:var(--text-label);font:inherit;font-size:14px;cursor:pointer}
+.btn:hover{color:var(--text-value)}
+/* wheels */
+.wheels{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:20px 16px 24px;flex:1}
+@media (max-width:1023px){.wheels{grid-template-columns:repeat(2,1fr)}}
+.col{display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
+.col-head{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;position:relative}
+.col-head .name{font-size:15px;color:var(--text-primary)}
+.col-head .iconbtn{position:absolute;right:8%}
+.wheel{position:relative;width:min(220px,100%);aspect-ratio:1;max-width:220px;min-width:140px;touch-action:none;cursor:crosshair}
+.wheel .bezel{position:absolute;inset:0;border-radius:50%;background:#1b1b1f;box-shadow:inset 0 2px 6px #000, 0 0 0 1px #000}
+.wheel .arc{position:absolute;inset:3%;border-radius:50%}
+.wheel .ring{position:absolute;inset:12%;border-radius:50%;background:conic-gradient(from 340deg,#ff0000,#ff00ff,#0000ff,#00ffff,#00ff00,#ffff00,#ff0000)}
+.wheel .disc{position:absolute;inset:14.5%;border-radius:50%;background:radial-gradient(circle,#3a3a40 0%,#2c2c32 70%,#26262b 100%)}
+.wheel .cross-h,.wheel .cross-v{position:absolute;background:rgba(255,255,255,.35)}
+.wheel .cross-h{left:14.5%;right:14.5%;top:50%;height:1px}
+.wheel .cross-v{top:14.5%;bottom:14.5%;left:50%;width:1px}
+.wheel .puck{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--puck);box-shadow:0 0 0 1px #000;left:50%;top:50%}
+.readouts{display:flex;gap:6px;justify-content:center;width:100%}
+.readouts .field{width:100%;height:40px;cursor:ew-resize}
+.readouts .fieldwrap{flex:1;max-width:72px;align-items:stretch}
+.readouts .uline{width:100%;height:3px;border-radius:1px}
+.jog{width:100%;height:40px;border-radius:20px;background:var(--surface-well);box-shadow:inset 0 2px 4px #000;overflow:hidden;position:relative;touch-action:none;cursor:ew-resize}
+.jog .ridges{position:absolute;inset:6px 14px;border-radius:14px;background:repeating-linear-gradient(90deg,#2a2a2e 0 2px,#111113 2px 6px)}
+/* popover */
+.pop{position:fixed;right:16px;bottom:120px;width:280px;background:var(--surface-header);border:1px solid var(--surface-well);border-radius:4px;padding:16px;display:none;flex-direction:column;gap:14px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.pop.show{display:flex}
+.pop .row{display:flex;justify-content:space-between;align-items:center}
+.pop h3{margin:0;font-size:14px;font-weight:600;color:var(--text-primary)}
+.switch{width:44px;height:24px;border-radius:12px;background:var(--surface-field);border:1px solid var(--border-field);position:relative;cursor:pointer}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--icon-inactive);transition:left 80ms}
+.switch.on{background:#3a5a3f}.switch.on::after{left:22px;background:#fff}
+/* status */
+.status{display:flex;align-items:center;gap:16px;height:40px;padding:0 16px;background:var(--surface-footer);font-size:12px;color:var(--text-label)}
+.status .dot{width:8px;height:8px;border-radius:50%;background:var(--status-connected)}
+.status .grow{flex:1}
+.note{position:fixed;left:50%;top:8px;transform:translateX(-50%);font-size:11px;color:var(--text-label);opacity:.6;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="app safe" id="app">
+  <div class="note">Mockup only: not connected to disguise</div>
+
+  <nav class="toolbar">
+    <div class="tool active" id="tPrim" title="Primaries">
+      <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="14" cy="14" r="11"/><circle cx="14" cy="14" r="2.5" fill="currentColor"/></svg><span class="dot"></span>
+    </div>
+    <div class="tool later" title="Looks: coming later">
+      <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="5" width="8" height="8" rx="1.5"/><rect x="16" y="5" width="8" height="8" rx="1.5"/><rect x="4" y="16" width="8" height="8" rx="1.5"/><rect x="16" y="16" width="8" height="8" rx="1.5"/></svg>
+    </div>
+    <div class="tool later" title="A/B compare: coming later">
+      <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="6" width="20" height="16" rx="1.5"/><path d="M14 6v16"/></svg>
+    </div>
+    <div class="tool later" title="Copy grade: coming later">
+      <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="9" y="9" width="14" height="14" rx="1.5"/><path d="M5 19V6.5A1.5 1.5 0 0 1 6.5 5H19"/></svg>
+    </div>
+    <div class="tool later" title="Curves: coming later">
+      <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="20" height="20" rx="1.5"/><path d="M5 23C12 22 13 7 23 5"/></svg>
+    </div>
+    <div class="tb-spacer"></div>
+    <div class="tb-right">
+      <button class="tbtn" id="undo" title="Undo (Ctrl/Cmd+Z)" disabled>↶</button>
+      <button class="tbtn" id="redo" title="Redo (Ctrl/Cmd+Shift+Z)" disabled>↷</button>
+      <button class="tbtn bypass" id="bypass" title="Bypass: show the picture without the grade (B)">Bypass</button>
+      <button class="tbtn lock" id="lock" title="Hold 1 s to go Live; tap to go Safe"><div class="fill"></div><span id="lockLbl">🔒 SAFE</span></button>
+    </div>
+  </nav>
+
+  <header class="header">
+    <h1>Primaries – Color Wheels</h1>
+    <span class="hlabel">Layer</span>
+    <select class="picker" id="layer">
+      <option>track_1 › LED Main</option>
+      <option>track_1 › LED Left IMAG</option>
+      <option>track_1 › LED Right IMAG</option>
+    </select>
+    <span class="hlabel">Source</span>
+    <div class="seg" id="source"><button class="on">Background</button><button>Texture</button></div>
+    <span class="spacer"></span>
+    <button class="iconbtn" id="resetAll" title="Reset grade">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10a6 6 0 1 0 2-4.5"/><path d="M4 3v3h3"/></svg>
+    </button>
+  </header>
+
+  <section class="strip" id="top"></section>
+  <section class="wheels" id="wheels"></section>
+  <section class="strip" id="bottom"></section>
+
+  <footer class="status">
+    <span class="dot"></span><span>Connected</span><span>director.local</span><span id="stLayer">LED Main / track_1</span>
+    <span class="grow"></span><span id="stMsg"></span><span>v0.1 mockup</span>
+  </footer>
+</div>
+
+<div class="pop" id="pop">
+  <div class="row"><h3>Legal range</h3><div class="switch" id="clampSw"></div></div>
+  <div class="row"><span class="hlabel">Low clamp</span><div id="clampLo"></div></div>
+  <div class="row"><span class="hlabel">High clamp</span><div id="clampHi"></div></div>
+</div>
+
+<script>
+(function(){
+const NEUTRAL = {
+  temp:6500, tint:0, cont:1, bright:0, sat:50,
+  lift:{m:0,x:0,y:0}, gamma:{m:0,x:0,y:0}, gain:{m:1,x:0,y:0}, offset:{m:25,x:0,y:0},
+  clamp:{on:false, lo:0, hi:1}
+};
+const S = JSON.parse(JSON.stringify(NEUTRAL));
+const AXES = {r:110, g:230, b:350}; // degrees, from docs/GRADE_MATH.md
+const K = {lift:0.25, gamma:0.25, gain:0.5, offset:25}; // offset in display units
+const fmt = (v,d)=> (Math.abs(v) < 0.5*Math.pow(10,-d) ? 0 : v).toFixed(d);
+
+function deltas(w, k){
+  const a = Math.min(1, Math.hypot(w.x, w.y)), th = Math.atan2(w.y, w.x);
+  const out = {};
+  for (const c in AXES) out[c] = k * a * Math.cos(th - AXES[c]*Math.PI/180) * 2/3;
+  return out;
+}
+
+/* ---------- value field (drag / wheel / type / dbl-click reset) ---------- */
+function makeField(opts){
+  // opts: get(), set(v), step, dp, min, max, reset()
+  const el = document.createElement('div'); el.className='field';
+  const render = ()=>{ if (!el.querySelector('input')) el.textContent = fmt(opts.get(), opts.dp); };
+  let startX=0, startV=0, moved=false, pid=null;
+  el.addEventListener('pointerdown', e=>{
+    if (el.querySelector('input')) return;
+    pid=e.pointerId; el.setPointerCapture(pid); startX=e.clientX; startV=opts.get(); moved=false;
+  });
+  el.addEventListener('pointermove', e=>{
+    if (pid!==e.pointerId) return;
+    const dx = e.clientX-startX; if (Math.abs(dx)>3) moved=true;
+    if (moved){ set(startV + dx*opts.step*(e.shiftKey?0.1:1)); }
+  });
+  el.addEventListener('pointerup', e=>{
+    if (pid!==e.pointerId) return; pid=null;
+    if (!moved) edit();
+  });
+  el.addEventListener('wheel', e=>{ e.preventDefault(); set(opts.get() - Math.sign(e.deltaY)*opts.step*10*(e.shiftKey?0.1:1)); }, {passive:false});
+  function set(v){ if (opts.min!=null) v=Math.max(opts.min,v); if (opts.max!=null) v=Math.min(opts.max,v); opts.set(v); refresh(); }
+  function edit(){
+    const inp=document.createElement('input'); inp.value=fmt(opts.get(),opts.dp);
+    el.textContent=''; el.appendChild(inp); inp.focus(); inp.select();
+    const done=(ok)=>{ const v=parseFloat(inp.value); inp.remove(); if (ok && !isNaN(v)) set(v); else render(); };
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') done(true); if(e.key==='Escape') done(false); });
+    inp.addEventListener('blur', ()=>done(true));
+  }
+  el._render = render; render(); return el;
+}
+
+/* ---------- parameters ---------- */
+const fields = [];
+function param(container, label, key, dp, step, hint, min, max){
+  const p = document.createElement('div'); p.className='param';
+  const l = document.createElement('label'); l.textContent=label;
+  l.addEventListener('dblclick', ()=>{ S[key]=NEUTRAL[key]; refresh(); });
+  const wrap = document.createElement('div'); wrap.className='fieldwrap';
+  const f = makeField({get:()=>S[key], set:v=>S[key]=v, dp, step, min, max});
+  const h = document.createElement('div'); h.className='hint'; h.style.background=hint;
+  wrap.append(f,h); p.append(l,wrap); container.appendChild(p); fields.push(f);
+}
+const top = document.getElementById('top'), bottom = document.getElementById('bottom');
+param(top,'Temp','temp',0,10,'linear-gradient(90deg,#2673D5,#DE891F)',1000,20000);
+param(top,'Tint','tint',2,0.01,'linear-gradient(90deg,#0CF463,#F10DAB)');
+param(top,'Cont','cont',3,0.002,'linear-gradient(90deg,#1F1F1F,#FFFFFF)',0);
+param(top,'Bright','bright',2,0.005,'linear-gradient(90deg,#1F1F1F,#FFFFFF)');
+param(bottom,'Sat','sat',2,0.2,'linear-gradient(90deg,#777,#f00,#ff0,#0f0,#0ff,#00f,#f0f)',0,100);
+const rt = document.createElement('div'); rt.className='right-tools';
+rt.innerHTML = '<span class="badge" id="clampBadge">CLAMP</span><button class="btn" id="legal">Legal range ▸</button>';
+bottom.appendChild(rt);
+
+/* ---------- wheels ---------- */
+const WHEELS = [
+  {key:'lift', name:'Lift', dp:2, jog:0.001, chans:['y','r','g','b']},
+  {key:'gamma', name:'Gamma', dp:2, jog:0.001, chans:['y','r','g','b']},
+  {key:'gain', name:'Gain', dp:2, jog:0.002, chans:['y','r','g','b']},
+  {key:'offset', name:'Offset', dp:2, jog:0.1, chans:['r','g','b']},
+];
+const wheelEls = {};
+const CHC = {y:'var(--channel-y)', r:'var(--channel-r)', g:'var(--channel-g)', b:'var(--channel-b)'};
+const wrapW = document.getElementById('wheels');
+for (const w of WHEELS){
+  const col = document.createElement('div'); col.className='col';
+  col.innerHTML = `<div class="col-head"><span class="name">${w.name}</span>
+    <button class="iconbtn" title="Reset ${w.name}"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10a6 6 0 1 0 2-4.5"/><path d="M4 3v3h3"/></svg></button></div>
+    <div class="wheel"><div class="bezel"></div><div class="arc"></div><div class="ring"></div><div class="disc"></div>
+    <div class="cross-h"></div><div class="cross-v"></div><div class="puck"></div></div>
+    <div class="readouts"></div><div class="jog"><div class="ridges"></div></div>`;
+  wrapW.appendChild(col);
+  const st = S[w.key];
+  col.querySelector('.iconbtn').onclick = ()=>{ Object.assign(st, NEUTRAL[w.key]); refresh(); };
+  // readouts
+  const ro = col.querySelector('.readouts'); const ros={};
+  for (const c of w.chans){
+    const fw = document.createElement('div'); fw.className='fieldwrap';
+    const f = makeField({dp:w.dp, step:w.jog*2,
+      get:()=> c==='y' ? st.m : st.m + deltas(st, K[w.key])[c],
+      set:v=>{ if (c==='y') st.m=v; else { // editing a channel nudges master by the difference (mockup simplification)
+        const cur = st.m + deltas(st,K[w.key])[c]; st.m += (v-cur)/3; } } });
+    const u = document.createElement('div'); u.className='uline'; u.style.background=CHC[c];
+    fw.append(f,u); ro.appendChild(fw); ros[c]=f; fields.push(f);
+  }
+  // wheel drag (relative)
+  const wh = col.querySelector('.wheel'), puck = col.querySelector('.puck');
+  let pid=null, sx=0, sy=0, px=0, py=0;
+  wh.addEventListener('pointerdown', e=>{ pid=e.pointerId; wh.setPointerCapture(pid); sx=e.clientX; sy=e.clientY; px=st.x; py=st.y; });
+  wh.addEventListener('pointermove', e=>{
+    if (pid!==e.pointerId) return;
+    const r = wh.getBoundingClientRect().width*0.355; const f = e.shiftKey?0.25:1;
+    let nx = px + (e.clientX-sx)/r*f, ny = py - (e.clientY-sy)/r*f;
+    const m = Math.hypot(nx,ny); if (m>1){ nx/=m; ny/=m; }
+    st.x=nx; st.y=ny; refresh();
+  });
+  wh.addEventListener('pointerup', ()=>{ pid=null; });
+  wh.addEventListener('dblclick', ()=>{ st.x=0; st.y=0; refresh(); });
+  // jog
+  const jog = col.querySelector('.jog'), ridges = col.querySelector('.ridges');
+  let jpid=null, jx=0, jm=0;
+  jog.addEventListener('pointerdown', e=>{ jpid=e.pointerId; jog.setPointerCapture(jpid); jx=e.clientX; jm=st.m; });
+  jog.addEventListener('pointermove', e=>{
+    if (jpid!==e.pointerId) return; const dx=e.clientX-jx;
+    st.m = jm + dx*w.jog*(e.shiftKey?0.1:1); ridges.style.backgroundPosition = `${dx}px 0`; refresh();
+  });
+  jog.addEventListener('pointerup', ()=>{ jpid=null; });
+  jog.addEventListener('dblclick', ()=>{ st.m=NEUTRAL[w.key].m; refresh(); });
+  wheelEls[w.key] = {puck, arc:col.querySelector('.arc'), ros, w};
+}
+
+/* ---------- header / popover ---------- */
+const seg = document.getElementById('source');
+seg.querySelectorAll('button').forEach(b=> b.onclick=()=>{ seg.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); msg('Source → '+b.textContent); });
+document.getElementById('layer').onchange = e=>{ document.getElementById('stLayer').textContent = e.target.value.split(' › ')[1]+' / track_1'; msg('Loaded layer values'); };
+let armT=null; const ra = document.getElementById('resetAll');
+ra.onclick = ()=>{
+  if (ra.classList.contains('armed')){ restoreAll(JSON.stringify(NEUTRAL)); disarm(); msg('Grade reset'); return; }
+  ra.classList.add('armed'); ra.textContent='Tap again to reset'; armT=setTimeout(disarm,2000);
+};
+function disarm(){ clearTimeout(armT); ra.classList.remove('armed'); ra.innerHTML='<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10a6 6 0 1 0 2-4.5"/><path d="M4 3v3h3"/></svg>'; }
+const pop = document.getElementById('pop');
+document.getElementById('legal').onclick = ()=> pop.classList.toggle('show');
+const sw = document.getElementById('clampSw'); sw.onclick=()=>{ S.clamp.on=!S.clamp.on; refresh(); };
+const lo = makeField({get:()=>S.clamp.lo, set:v=>S.clamp.lo=v, dp:3, step:0.002, min:0, max:1});
+const hi = makeField({get:()=>S.clamp.hi, set:v=>S.clamp.hi=v, dp:3, step:0.002, min:0, max:1});
+document.getElementById('clampLo').appendChild(lo); document.getElementById('clampHi').appendChild(hi); fields.push(lo,hi);
+let mT=null; function msg(t){ const m=document.getElementById('stMsg'); m.textContent=t; clearTimeout(mT); mT=setTimeout(()=>m.textContent='',2000); }
+
+/* ---------- render ---------- */
+function isNeutral(){ return JSON.stringify(S)===JSON.stringify(NEUTRAL); }
+function refresh(){
+  fields.forEach(f=>f._render());
+  for (const k in wheelEls){
+    const {puck, arc, w} = wheelEls[k], st=S[k];
+    puck.style.left = (50 + st.x*35.5)+'%'; puck.style.top = (50 - st.y*35.5)+'%';
+    const n = NEUTRAL[k].m, span = k==='offset'?25:(k==='gain'?1:1);
+    const frac = Math.max(0, Math.min(1, 0.5 + (st.m-n)/span/2));
+    arc.style.background = `conic-gradient(from 180deg, #DDDDDF 0 ${frac*360}deg, transparent ${frac*360}deg)`;
+    arc.style.mask = arc.style.webkitMask = 'radial-gradient(circle, transparent 66%, #000 67%, #000 70%, transparent 71%)';
+  }
+  sw.classList.toggle('on', S.clamp.on);
+  document.getElementById('clampBadge').classList.toggle('show', S.clamp.on);
+  document.getElementById('tPrim').classList.toggle('modified', !isNeutral());
+}
+
+/* ---------- undo / redo, bypass, live/safe ---------- */
+const app = document.getElementById('app');
+const hist=[JSON.stringify(S)]; let hi_=0;
+function commit(){ const j=JSON.stringify(S); if (j!==hist[hi_]){ hist.splice(hi_+1); hist.push(j); if(hist.length>51) hist.shift(); hi_=hist.length-1; } ur(); }
+function ur(){ document.getElementById('undo').disabled = hi_<=0; document.getElementById('redo').disabled = hi_>=hist.length-1; }
+document.addEventListener('pointerup', ()=> setTimeout(commit,0));
+document.addEventListener('change', ()=> setTimeout(commit,0));
+document.getElementById('undo').onclick=()=>{ if(hi_>0){ hi_--; restoreAll(hist[hi_]); msg('Undo'); } ur(); };
+document.getElementById('redo').onclick=()=>{ if(hi_<hist.length-1){ hi_++; restoreAll(hist[hi_]); msg('Redo'); } ur(); };
+function restoreAll(j){ const o=JSON.parse(j); for (const k in o){ if (typeof o[k]==='object') Object.assign(S[k], o[k]); else S[k]=o[k]; } refresh(); }
+const bp=document.getElementById('bypass');
+bp.onclick=()=>{ const on=!app.classList.contains('bypass'); app.classList.toggle('bypass',on); bp.classList.toggle('on',on); msg(on?'Bypass on: ungraded picture':'Grade restored'); };
+const lock=document.getElementById('lock'), fill=lock.querySelector('.fill'), lbl=document.getElementById('lockLbl');
+let holdT=null, holdStart=0, raf=null;
+function setLive(on){ app.classList.toggle('safe',!on); lock.classList.toggle('live',on); lbl.textContent = on?'LIVE':'🔒 SAFE'; fill.style.width='0'; msg(on?'Live: controls active':'Safe: controls locked'); }
+lock.addEventListener('pointerdown', e=>{
+  if (!app.classList.contains('safe')){ setLive(false); return; }
+  holdStart=performance.now();
+  const step=()=>{ const t=(performance.now()-holdStart)/1000; fill.style.width=Math.min(100,t*100)+'%'; if (t>=1){ setLive(true); raf=null; return; } raf=requestAnimationFrame(step); };
+  raf=requestAnimationFrame(step);
+});
+['pointerup','pointerleave','pointercancel'].forEach(ev=> lock.addEventListener(ev, ()=>{ if(raf){ cancelAnimationFrame(raf); raf=null; fill.style.width='0'; } }));
+document.getElementById('layer').addEventListener('change', ()=> setLive(false));
+document.addEventListener('keydown', e=>{
+  if (e.target.tagName==='INPUT') return;
+  if ((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); (e.shiftKey?document.getElementById('redo'):document.getElementById('undo')).click(); }
+  if (e.key==='b' || e.key==='B') bp.click();
+});
+refresh();
+})();
+</script>
+</body>
+</html>
