@@ -45,8 +45,12 @@ export function deltasToPuck(color: RGB, k: number): Puck {
   return k === 0 ? { x: 0, y: 0 } : { x: x / k, y: y / k }
 }
 
+/**
+ * Where to draw the puck. Typed readouts can hold colour beyond what the rim represents; the
+ * values are kept as typed and the puck is drawn on the rim in their direction.
+ */
 export function wheelPuck(name: WheelName, wheel: WheelState): Puck {
-  return deltasToPuck(wheel.color, K_WHEEL[name])
+  return clampToDisc(deltasToPuck(wheel.color, K_WHEEL[name]))
 }
 
 /** Moves the puck, keeping any common (non-zero-sum) part a typed readout left behind. */

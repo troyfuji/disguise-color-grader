@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // The main screen (UI_SPEC §1). Controls edit GradeState through the grade store; the store
 // sends edits to the Colour Grader server, which is the only thing that talks to disguise.
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { BRIGHTNESS_RANGE, CONTRAST_RANGE, KELVIN_RANGE, SATURATION_RANGE, TINT_RANGE } from '@shared/disguise/paths'
 import { neutralGrade } from '@shared/grade/neutral'
 import { WHEELS, type GradeState } from '@shared/grade/types'
@@ -68,7 +68,23 @@ function resetTap() {
 }
 
 // ── connect dialog, banners, overlay ────────────────────────────────────────
+// The dialog opens by itself when there is no Director, and when a remembered one hasn't
+// connected within a few seconds of opening the page (it may be on another machine now).
 const connectOpen = ref(false)
+let staleTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+  staleTimer = null
+  if (session.session?.director.status !== 'connected') connectOpen.value = true
+}, 3000)
+watch(
+  () => session.session?.director.status,
+  (s) => {
+    if (s === 'connected' && staleTimer) {
+      clearTimeout(staleTimer)
+      staleTimer = null
+    }
+  },
+)
+onBeforeUnmount(() => staleTimer && clearTimeout(staleTimer))
 const showConnect = computed(() => connectOpen.value || (session.link === 'open' && !session.session?.director.address))
 const lostLayer = computed(() => {
   const s = session.session
@@ -188,7 +204,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
     <StatusBar @open-connect="connectOpen = true" />
 
-    <div v-if="reconnecting && !showConnect" class="overlay">{{ reconnecting }}</div>
+    <div v-if="reconnecting && !showConnect" class="overlay">
+      {{ reconnecting }}
+      <button v-if="session.link === 'open'" class="banner-btn" @click="connectOpen = true">Change Director</button>
+    </div>
     <ConnectDialog v-if="showConnect" @close="connectOpen = false" />
   </div>
 </template>
@@ -340,6 +359,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   top: 50%;
   z-index: 40;
   transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
   padding: 16px 24px;
   background: var(--surface-header);
   border: 1px solid var(--surface-well);

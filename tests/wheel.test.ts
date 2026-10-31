@@ -55,6 +55,15 @@ describe('readouts', () => {
     }
   })
 
+  it('typed values beyond the rim are kept, and the puck is drawn on the rim', () => {
+    for (const name of ['lift', 'gamma', 'gain'] as const) {
+      const w = setReadout(name, neutralWheel(name), 'b', 9)
+      expect(readout(name, w, 'b')).toBeCloseTo(9, 12)
+      const p = wheelPuck(name, w)
+      expect(Math.hypot(p.x, p.y)).toBeCloseTo(1, 12)
+    }
+  })
+
   it('typing Y sets the master only', () => {
     const w = setReadout('gain', neutralWheel('gain'), 'y', 1.5)
     expect(w.master).toBe(1.5)

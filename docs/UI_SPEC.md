@@ -113,7 +113,7 @@ Connection dot (green connected / amber connecting / red offline), Director addr
 | Double-tap the wheel | Centre the puck (colour reset; master unchanged) |
 | Reset icon | Resets colour **and** master |
 
-Puck is clamped to the disc. Readouts update live while dragging.
+Puck is clamped to the disc. Typed readouts are kept as typed, even when they hold more colour than the rim represents; the puck is then drawn on the rim in their direction. Readouts update live while dragging.
 
 ### Jog wheels
 
@@ -128,7 +128,7 @@ Puck is clamped to the disc. Readouts update live while dragging.
 
 ## 4. Connect flow
 
-1. First load: **Connect** dialog — Director address (e.g. `192.168.10.11` or `director.local`), Connect button. The server remembers the last address and reconnects to it on start, so this dialog only appears when the server has no Director.
+1. First load: **Connect** dialog — Director address (e.g. `192.168.10.11` or `director.local`), Connect button. The server remembers the last address and reconnects to it on start, so this dialog appears when the server has no Director, or when the remembered one hasn't connected within 3 s of the page opening (the Director may be on another machine). The "Reconnecting…" overlay has a **Change Director** button, and the address in the status bar always opens the dialog.
 2. On connect, the server opens its Live Update socket → runs layer discovery (one Python execute call) → subscribe to the live-layer list → fill the layer picker. If exactly one ColourAdjust layer is live and it was the last-used layer, preselect it; otherwise the user picks.
 3. Subscribe to the selected layer's values. The panel shows them when the first `valuesChanged` arrives, in **Safe**.
 
