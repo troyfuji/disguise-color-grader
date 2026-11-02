@@ -21,7 +21,7 @@ const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { ve
 
 const args = new Map<string, string>()
 for (let i = 2; i < process.argv.length; i += 2) args.set(process.argv[i]!, process.argv[i + 1] ?? '')
-// Same convention as Strata: HOST / PORT (and DIRECTOR) from the environment; flags win.
+// HOST / PORT (and DIRECTOR) from the environment; flags win.
 const host = args.get('--host') || process.env.HOST || '0.0.0.0'
 const port = Number(args.get('--port') || process.env.PORT || 8080)
 const initialDirector = args.get('--director') || process.env.DIRECTOR || ''

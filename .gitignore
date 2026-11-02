@@ -7,3 +7,6 @@ coverage/
 !.vscode/extensions.json
 data/
 /ColourGrader-*.zip
+
+# Third-party reference material (not ours to publish)
+reference/

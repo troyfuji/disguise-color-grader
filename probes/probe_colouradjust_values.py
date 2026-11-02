@@ -7,7 +7,7 @@
 # Names checked in d3.pyi: Track.getLeafLayers(type), Layer.nSequences/sequence(i),
 # FieldSequence.name/typeName/defaultValue/sequence, KeySequence.nKeys/key(i), Key.v/localT.
 #
-# Run: npm run cli -- exec --file C:/dev/disguise-color-grader/probes/probe_colouradjust_values.py
+# Run: npm run cli -- exec --file <path-to-this-repo>/probes/probe_colouradjust_values.py
 
 import json
 import d3

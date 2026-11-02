@@ -1,0 +1,10 @@
+Copyright (c) 2026 troyfuji. All rights reserved.
+
+This software and its documentation are proprietary. No licence is granted to use,
+copy, modify, merge, publish, distribute, sublicense or sell copies of it, in whole
+or in part, without prior written permission from the copyright holder.
+
+Third-party components keep their own licences. In the portable ZIP:
+  - Node.js runtime (MIT): node/LICENSE
+  - ws, Vue and Pinia (MIT) and the Open Sans font (SIL OFL 1.1): licenses/
+From source, see each package's licence in node_modules.

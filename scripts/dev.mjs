@@ -1,7 +1,6 @@
 // npm run dev — starts the Colour Grader server (restarts on change) and the Vite panel dev
-// server together, like Strata's `npm run dev`. HOST / PORT / DIRECTOR come from the
-// environment (Start-Grader.ps1 sets them). Pass --mock to also start the mock Director and
-// connect to it.
+// server together. HOST / PORT / DIRECTOR come from the environment (Start-Grader.ps1 sets
+// them). Pass --mock to also start the mock Director and connect to it.
 
 import { spawn } from 'node:child_process'
 

@@ -9,7 +9,7 @@
 #   sequence(i), FieldSequence.name/userName/typeName/disableSequencing/noSequence/sequence,
 #   KeySequence.nKeys/t(i), Resource.uid
 #
-# Run: npm run cli -- exec --file C:/dev/disguise-color-grader/probes/probe_colouradjust_sequences.py
+# Run: npm run cli -- exec --file <path-to-this-repo>/probes/probe_colouradjust_sequences.py
 
 import json
 import d3

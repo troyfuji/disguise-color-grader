@@ -1,80 +1,116 @@
 # disguise Colour Grader
 
-Professional, colourist-style primary grading controls in the browser, driving a disguise ColourAdjust layer live.
+Colourist-style primary grading for disguise, from any browser or tablet. Lift / Gamma / Gain / Offset wheels, Temp, Tint, Contrast, Brightness and Saturation drive a disguise **ColourAdjust** layer live, over the network.
 
-**Status:** the panel grades a live ColourAdjust layer end to end: wheels, sliders, layer picker, Live/Safe, Bypass, undo/redo, legal range and shared presets. It was tested against a real Director on 2026-10-29. Open items: keyframes at the playhead (FR17), and the visual checks still listed in docs/DISGUISE_API.md §8 (Gamma direction, how negative Shadow renders).
+disguise can already grade with the ColourAdjust layer, but only through Designer's sliders. This panel gives colourists, camera directors and clients the controls they already know, without handing them the show file. A small server on a laptop talks to the Director; every tablet and browser talks only to that server.
 
-## Starting it (like Strata)
+> **Status:** v0.1. It grades a live ColourAdjust layer end to end and was tested against a real Director on 2026-10-29. Still open: keyframes at the playhead, and a few visual checks listed in [docs/DISGUISE_API.md §8](docs/DISGUISE_API.md).
 
-Double-click **`Start-Grader.cmd`**, or in PowerShell:
+## Features
+
+- **Colour wheels:** Lift, Gamma, Gain and Offset with Y R G B readouts and master jog wheels. They behave like a standard grading panel, and the server converts them to disguise Levels values ([GRADE_MATH.md](docs/GRADE_MATH.md)).
+- **Sliders:** Temp, Tint, Contrast, Brightness and Saturation, in disguise's own units and Designer's ranges.
+- **Legal range:** clamp the output to a low and high level.
+- **Source:** toggle the layer between background and texture.
+- **Bypass:** switch the grade off and on to compare.
+- **Undo / Redo:** 50 steps, separate from Designer's undo.
+- **Presets:** save, apply, rename and update grades. They're stored on the server and shared by every panel.
+- **Safe by default:** the panel starts locked after every connect and layer change. Hold **SAFE** for 1 second to go Live.
+- **Only the layer that's on screen:** the layer picker lists ColourAdjust layers live at the playhead. If the selected one stops being live, the panel locks. It never switches layers by itself.
+- **Light on disguise:** one Live Update connection however many panels are open, at most one write per property every 50 ms, and nothing sent while idle (see [API budget](#api-budget)).
+- **Touch first:** works on an iPad (Safari) and a laptop (Chrome), with 44 px minimum targets.
+
+## Requirements
+
+- A disguise **Director** running Designer, reachable on the network (port 80). The Colour Grader uses Designer's Live Update and Python Execution APIs.
+- A **ColourAdjust layer** on the playing track.
+- A Windows laptop on the show network for the server. Panels run in any modern browser.
+
+## Quick start (portable ZIP)
+
+No install needed: the ZIP carries its own Node runtime.
+
+1. Download `ColourGrader-v<version>-win-x64.zip` and unzip it somewhere writable, like the Desktop (not Program Files).
+2. Double-click **`Start-Grader.cmd`**. If Windows asks whether `node.exe` may use the network, allow it on private networks so tablets can connect.
+3. Open <http://localhost:8080>. From a tablet, use the address the window prints.
+4. Enter the Director's IP and click **Connect**. The address is remembered.
+5. Pick the ColourAdjust layer, then **hold SAFE for 1 second** to go Live.
+
+Launcher options (PowerShell):
 
 ```powershell
-.\Start-Grader.ps1                          # binds 0.0.0.0:8080
-.\Start-Grader.ps1 -Port 9000               # custom server port
+.\Start-Grader.ps1 -Port 9000               # another port
 .\Start-Grader.ps1 -Director 192.168.10.11  # connect to this Director on start
-.\Start-Grader.ps1 -Mock                    # also start the mock Director (no disguise needed)
+.\Start-Grader.ps1 -BindHost 127.0.0.1      # this laptop only, no tablets
 ```
 
-The launcher installs dependencies on first run, sets `HOST` / `PORT` / `DIRECTOR`, and runs `npm run dev`, which starts the server and the Vite panel together. Then:
+The ZIP includes a `README.txt` quick start for operators.
 
-1. Open **http://localhost:5174** (or `http://<this laptop's IP>:5174` from a tablet).
-2. If it asks, enter the Director IP and click **Connect**. The server remembers it and reconnects on start.
-3. Pick the ColourAdjust layer, then **hold SAFE for 1 second** to go Live.
+## Running from source
 
-Ports are 8080 (server) and 5174 (panel), so it can run beside Strata (8081/5173).
+Needs **Node.js 22.18 or newer**, because the server runs TypeScript directly.
+
+```powershell
+git clone https://github.com/troyfuji/disguise-color-grader.git
+cd disguise-color-grader
+.\Start-Grader.cmd            # or: npm install, then npm run dev
+```
+
+The launcher installs dependencies on first run and starts the server (port 8080) and the Vite panel (port 5174) together. Open <http://localhost:5174>.
+
+No disguise to hand? Add `-Mock` (or run `npm run dev:mock`) to also start a mock Director on port 8090 and connect to it.
+
+### Commands
+
+```bash
+npm run dev          # server :8080 + panel :5174 (what the launcher runs)
+npm run dev:mock     # same, plus the mock Director on :8090
+npm run mock         # mock Director only (add -- --designer-edits to simulate Designer edits)
+npm test             # vitest: grade maths, API budget, presets, server ⇄ mock Director
+npm run build        # typecheck + build the panel into dist/
+npm start            # production: the server alone serves dist/ on :8080
+npm run package      # tests + build + portable Windows ZIP
+```
+
+The server reads `HOST`, `PORT` and `DIRECTOR` from the environment. The `--host`, `--port` and `--director` flags override them, and `--static`, `--state` and `--presets` point it at other folders or files.
 
 ## Using it
 
-The toolbar has two pages. Undo/Redo, **Bypass** and **SAFE/LIVE** are on the right of the toolbar and work on both pages.
+The toolbar has two pages, **Color Wheels** and **Presets**. Undo / Redo, **Bypass** and **SAFE / LIVE** sit on the right and work on both.
 
-- **Color Wheels:** Lift / Gamma / Gain / Offset wheels with Y R G B readouts and master jogs. Under the wheels are horizontal sliders: **Cont** and **Bright** on the left, **Temp**, **Tint** and **Sat** on the right. They use disguise's own units and Designer's ranges (Temp 800–14000 K, Tint / Cont / Bright −50…+50, Sat −100…+100). Each has a reset button; double-tap a track or label also resets. **Legal range** is at the bottom.
-- **Presets:** save the current grade under a name (works in Safe), then **Apply** it later. Applying is one undoable edit, needs Live, and keeps the layer's Source. **⋯** on a card updates, renames or deletes it.
+- **Wheels:** drag the puck to tint, use the jog under each wheel for the master level. Shift (or two fingers) gives fine control, and double-tapping resets.
+- **Sliders:** drag, use the mouse wheel, or tap the value to type it. Ranges: Temp 800–14000 K, Tint / Cont / Bright −50…+50, Sat −100…+100. Each slider has a reset button.
+- **Presets:** save works in Safe. **Apply** is one undoable edit, needs Live, and keeps the layer's Source. **⋯** on a card updates, renames or deletes it.
 
-Things the panel does on its own:
+Things the server does on its own:
 
-- **White balance preset:** when a layer loads, the server sets it to **Custom**, because Temp and Tint only work with Custom.
+- **White balance:** when a layer loads, it sets the layer's white-balance preset to **Custom**, because Temp and Tint only work with Custom.
 - **Bypass:** switches the layer's `renderEnable` off and on. It never changes the grade or adds keyframes.
+- **Sync:** changes made in Designer, or by another panel, show up on every panel live. With two people grading at once, the last change wins.
+
+There's no login: anyone who can open the page can grade. Keep the server on the show network.
+
+## API budget
+
+The app must never be the reason a show stutters. These limits are enforced in the server and covered by tests ([PRODUCT_SPEC.md §7](docs/PRODUCT_SPEC.md)):
+
+| Rule | Limit |
+| --- | --- |
+| Live Update connections | 1 per server, however many panels |
+| Writes | At most 1 per property every 50 ms, batched into one message; the final value is always sent on release |
+| Idle | Nothing sent when nobody is touching a control |
+| Python Execution API | Only at connect and on an explicit Refresh. Never polled, never during a drag |
+| Undo / Bypass / Reset | One batched write each |
+| Reconnect | Back-off from 1 s up to 10 s |
 
 ## Where things are saved
 
-The server keeps its state in `data/` (git-ignored):
+The server keeps its state in `data/` (git-ignored; `app\data\` in the ZIP):
 
 | File | What |
 | --- | --- |
-| `data/server-state.json` | The last Director address |
-| `data/presets.json` | The preset list, shared by every panel. Copy this file to move presets to another machine. |
-
-`--state` and `--presets` point the server at other files.
-
-## Commands
-
-```bash
-npm install
-npm run dev          # server :8080 + panel http://localhost:5174 (what the launcher runs)
-npm run dev:mock     # same, plus the mock Director on :8090
-npm run mock         # mock Director only
-npm test             # vitest: maths, budget, presets, server ⇄ mock integration
-npm run build        # typecheck + build the panel into dist/
-npm start            # production: the server alone serves dist/ on http://0.0.0.0:8080
-npm run package      # tests + build + portable Windows ZIP (see below)
-```
-
-The server reads `HOST`, `PORT` and `DIRECTOR` from the environment; `--host`, `--port` and `--director` flags override them (also `--static`, `--state`, `--presets`). `npm run mock -- --designer-edits` also simulates someone editing the layer in Designer.
-
-## Portable Windows ZIP
-
-`npm run package` (or `.\scripts\Make-Portable.ps1`, add `-SkipTests` to skip the tests) builds `ColourGrader-v<version>-win-x64.zip` in the project root, about 33 MB. It carries its own `node.exe`, copied from this machine, so the target laptop needs nothing installed:
-
-```text
-ColourGrader\
-  Start-Grader.cmd / .ps1   launcher (-Port, -BindHost, -Director)
-  README.txt                quick start for operators
-  node\node.exe             Node runtime + licence
-  app\                      server\, shared\, dist\, node_modules\ws, package.json
-  app\data\                 created on first run: presets.json, server-state.json
-```
-
-Unzip it somewhere writable, double-click `Start-Grader.cmd`, and open `http://localhost:8080`. The window lists the address to use from a tablet. It runs the production server only, so there's one port and no Vite. To upgrade, copy `app\data\` from the old folder into the new one. The ZIP isn't committed (`.gitignore`).
+| `server-state.json` | The last Director address |
+| `presets.json` | The preset list. Copy it to move presets to another machine, or across when upgrading. |
 
 ## How it fits together
 
@@ -82,27 +118,48 @@ Unzip it somewhere writable, double-click `Start-Grader.cmd`, and open `http://l
 tablet ─┐                     colour-grader server (laptop)            disguise Director
 tablet ─┼─ ws /api/panel ──▶  session: selected layer, grade,  ── ws ──▶ Live Update (1 socket)
 laptop ─┘   (GradeState)      toDisguise(), 50 ms batched sets  ─ http ─▶ Python execute
-                              budget + layer-lock enforced              (discovery, Refresh, keyframe)
+                              budget + layer lock enforced              (discovery, Refresh)
 ```
 
-The server is standalone (not a Designer plugin) and is the only thing that talks to disguise. Panels send grade edits and preset changes, and receive the session state, the grade loaded from the layer, changes made by other panels or in Designer, and the preset list. Preset changes never reach disguise; applying a preset is an ordinary grade edit.
+- `src/`: the Vue 3 panel. It talks only to the server, over `/api/panel`.
+- `server/`: a Node server and the only code that talks to disguise. It handles the Live Update socket, Python calls, layer selection and the API budget.
+- `shared/`: grade maths and the panel ⇄ server protocol, used by both. `toDisguise()` is a pure, unit-tested function from the panel's grade to disguise values.
+- `tools/mock-director/`: a fake Director that speaks the Live Update protocol, so everything can be built and tested without disguise.
 
-Every disguise detail not yet measured on a real Director is in [shared/disguise/paths.ts](shared/disguise/paths.ts), marked **VERIFY**. See [probes/README.md](probes/README.md) for Phase 0.
+Disguise details are kept in [shared/disguise/paths.ts](shared/disguise/paths.ts). Anything not yet measured on a real Director is marked **VERIFY**.
 
-## The docs
+## Packaging
+
+`npm run package` (or `.\scripts\Make-Portable.ps1`; add `-SkipTests` to skip the tests) builds `ColourGrader-v<version>-win-x64.zip` in the project root, about 33 MB. It copies `node.exe` from the build machine, so build with Node 22.18 or newer.
+
+```text
+ColourGrader\
+  Start-Grader.cmd / .ps1   launcher (-Port, -BindHost, -Director)
+  README.txt                quick start for operators
+  LICENSE.txt, licenses\    this licence, and those of the bundled third-party code
+  node\node.exe             Node runtime + licence
+  app\                      server\, shared\, dist\, node_modules\ws, package.json
+  app\data\                 created on first run: presets.json, server-state.json
+```
+
+The ZIP isn't committed. Attach it to a GitHub release instead.
+
+## Docs
 
 | File | What it covers |
 | --- | --- |
-| [CLAUDE.md](CLAUDE.md) | Instructions for the AI coding assistant in VS Code |
-| [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) | Goals, users, agreed decisions, v1 scope, later goals, panel → disguise mapping |
-| [docs/UI_SPEC.md](docs/UI_SPEC.md) | The main screen, every control, interactions, touch rules, states |
-| [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) | Visual language familiar to colourists: colours, type, components |
-| [docs/GRADE_MATH.md](docs/GRADE_MATH.md) | How Lift/Gamma/Gain/Offset become disguise Levels values |
-| [docs/DISGUISE_API.md](docs/DISGUISE_API.md) | Live Update + Python Execution APIs, ColourAdjust properties, open checks |
+| [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) | Goals, users, agreed decisions, scope, panel → disguise mapping |
+| [docs/UI_SPEC.md](docs/UI_SPEC.md) | The screen, every control, interactions, touch rules, states |
+| [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) | Colours, type and component look |
+| [docs/GRADE_MATH.md](docs/GRADE_MATH.md) | How Lift / Gamma / Gain / Offset become disguise Levels values |
+| [docs/DISGUISE_API.md](docs/DISGUISE_API.md) | Live Update and Python Execution APIs, ColourAdjust properties, measured findings |
 | [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md) | Stack, repo layout, phased checklist |
-| [docs/mockup/index.html](docs/mockup/index.html) | The original clickable mockup (no disguise connection). The app has since changed: sliders under the wheels, the Presets page. |
-| [probes/README.md](probes/README.md) | Phase 0: how to probe a real Director with d3-plugin-toolkit |
+| [docs/mockup/index.html](docs/mockup/index.html) | The original clickable mockup. The app has since moved on: sliders under the wheels, a Presets page. |
+| [probes/README.md](probes/README.md) | How the disguise behaviour was measured on a real Director |
+| [CLAUDE.md](CLAUDE.md) | Rules for the AI coding assistant used on this repo |
 
-## Version 1 at a glance
+## License
 
-Web page · mouse and touch · one ColourAdjust layer at a time · source toggle on the panel · Lift / Gamma / Gain / Offset wheels with master jogs · Temp, Tint, Contrast, Brightness and Saturation sliders · legal-range clamp · Bypass · shared grade presets · disguise's own scopes for monitoring.
+Copyright (c) 2026 troyfuji. **All rights reserved.** No licence is granted to use, copy, modify or distribute this software without written permission. See [LICENSE](LICENSE).
+
+Third-party components (Node.js, ws, Vue, Pinia, the Open Sans font) keep their own licences, which ship in the ZIP's `licenses\` folder.

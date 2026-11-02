@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Build the Colour Grader and package it as a portable Windows ZIP (like Strata's Make-Beta).
+    Build the Colour Grader and package it as a portable Windows ZIP.
 
 .DESCRIPTION
     Nothing needs to be installed on the target machine: the ZIP carries its own node.exe.
@@ -10,6 +10,8 @@
           Start-Grader.cmd      double-click launcher
           Start-Grader.ps1      PowerShell launcher (-Port, -BindHost, -Director)
           README.txt            quick start
+          LICENSE.txt           all rights reserved
+          licenses\             licences of the bundled third-party code
           node\node.exe         Node runtime (copied from this machine; must be 22.18+)
           app\                  package.json, server\, shared\, dist\, node_modules\ws
           app\data\             created on first run: presets and last Director address
@@ -71,7 +73,17 @@ New-Item -ItemType Directory -Path $app, (Join-Path $inner 'node') | Out-Null
 # Node runtime (MIT licence travels with it)
 Copy-Item $nodeExe (Join-Path $inner 'node\node.exe')
 $nodeLicense = Join-Path (Split-Path -Parent $nodeExe) 'LICENSE'
-if (Test-Path $nodeLicense) { Copy-Item $nodeLicense (Join-Path $inner 'node\LICENSE') }
+if (Test-Path $nodeLicense) {
+    Copy-Item $nodeLicense (Join-Path $inner 'node\LICENSE')
+} else {
+    # The Windows installer doesn't ship it; fetch the one for this exact version.
+    $licenseUrl = "https://raw.githubusercontent.com/nodejs/node/v$nodeVersion/LICENSE"
+    try {
+        Invoke-WebRequest $licenseUrl -OutFile (Join-Path $inner 'node\LICENSE') -UseBasicParsing
+    } catch {
+        throw "Node's licence must ship with node.exe. Could not download $licenseUrl : $($_.Exception.Message)"
+    }
+}
 
 # App: built panel, server and shared code (TypeScript, run as-is), and the one runtime dependency
 Copy-Item "$projectRoot\dist"   "$app\dist"   -Recurse
@@ -79,6 +91,15 @@ Copy-Item "$projectRoot\server" "$app\server" -Recurse
 Copy-Item "$projectRoot\shared" "$app\shared" -Recurse
 New-Item -ItemType Directory -Path "$app\node_modules" | Out-Null
 Copy-Item "$projectRoot\node_modules\ws" "$app\node_modules\ws" -Recurse
+
+# Licences: ours, and those of the third-party code that ships (ws, plus what Vite bundles
+# into dist/: Vue, Pinia and the Open Sans font). MIT and OFL require the text to travel.
+Copy-Item "$projectRoot\LICENSE" "$inner\LICENSE.txt"
+$licenses = Join-Path $inner 'licenses'
+New-Item -ItemType Directory -Path $licenses | Out-Null
+foreach ($dep in 'ws', 'vue', '@vue/runtime-dom', '@vue/runtime-core', '@vue/reactivity', '@vue/shared', 'pinia', '@fontsource/open-sans') {
+    Copy-Item "$projectRoot\node_modules\$dep\LICENSE" (Join-Path $licenses (($dep -replace '^@', '' -replace '/', '-') + '.txt'))
+}
 
 # Trimmed package.json: the server reads its version from it, and "type": "module" makes Node
 # treat the .ts files as ES modules.
@@ -176,9 +197,10 @@ YOUR DATA
   folder. To move presets to another machine, copy presets.json.
 
 
-RUNNING BESIDE STRATA
----------------------
-  Colour Grader uses port 8080; Strata uses 8081. Both can run at once.
+PORTS
+-----
+  Colour Grader uses one port, 8080. If another app already uses it, start
+  with  .\Start-Grader.ps1 -Port 8090  (any free port).
 
 
 TROUBLESHOOTING
@@ -206,7 +228,20 @@ Write-Host "  Files staged." -ForegroundColor Green
 # ── 3. Create ZIP ─────────────────────────────────────────────────────────────
 Write-Host "Step 3: Creating $archiveName..." -ForegroundColor Yellow
 if (Test-Path $archivePath) { Remove-Item $archivePath -Force }
-Compress-Archive -Path $inner -DestinationPath $archivePath -CompressionLevel Optimal
+# Entry names use '/' as the ZIP format requires. Windows PowerShell's Compress-Archive (and
+# ZipFile on .NET Framework) write '\', which macOS and some unzip tools extract as flat files
+# named 'ColourGrader\app\...'.
+Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+$zip = [System.IO.Compression.ZipFile]::Open($archivePath, [System.IO.Compression.ZipArchiveMode]::Create)
+try {
+    foreach ($file in Get-ChildItem $staging -Recurse -File) {
+        $entry = $file.FullName.Substring($staging.Length + 1).Replace('\', '/')
+        [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+            $zip, $file.FullName, $entry, [System.IO.Compression.CompressionLevel]::Optimal)
+    }
+} finally {
+    $zip.Dispose()
+}
 Remove-Item $staging -Recurse -Force
 
 $sizeMb = [math]::Round((Get-Item $archivePath).Length / 1MB, 1)

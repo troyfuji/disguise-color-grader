@@ -29,7 +29,7 @@ From the toolkit root, with Designer running a disposable test project:
 
 ```bash
 npm run cli -- session snapshot
-npm run cli -- kb submit-probe C:/dev/disguise-color-grader/probes/<probe>.py
+npm run cli -- kb submit-probe <path-to-this-repo>/probes/<probe>.py
 npm run cli -- session diff
 ```
 

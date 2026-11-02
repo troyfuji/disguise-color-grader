@@ -2,6 +2,7 @@
   "name": "disguise-colour-grader",
   "private": true,
   "version": "0.1.0",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev.mjs",
