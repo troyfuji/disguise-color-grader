@@ -1,7 +1,11 @@
 # Phase 0 probes
 
 Python probe scripts that answer the **VERIFY** items in `docs/DISGUISE_API.md` and
-`docs/GRADE_MATH.md` on a real Director. Nothing here has been run yet.
+`docs/GRADE_MATH.md` on a real Director. `probe_colouradjust_sequences.py` and
+`probe_colouradjust_values.py` were run on 2026-10-29, and their findings are in
+`docs/DISGUISE_API.md` §8. `probe_scope_lookup.py` was run on 2026-11-03: it finds the feed
+rectangles that show a layer, and showed that Designer's scopes can't be opened from Python.
+Q3 and Q6 are still open.
 
 Probes are written and run with the **d3-plugin-toolkit** (`C:\dev\d3-plugin-toolkit`), which
 holds the Designer API stub, the knowledge base and the safety hooks.
