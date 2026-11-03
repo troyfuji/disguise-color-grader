@@ -4,7 +4,7 @@ Colourist-style primary grading for disguise, from any browser or tablet. Lift /
 
 disguise can already grade with the ColourAdjust layer, but only through Designer's sliders. This panel gives colourists, camera directors and clients the controls they already know, without handing them the show file. A small server on a laptop talks to the Director; every tablet and browser talks only to that server.
 
-> **Status:** v0.1. It grades a live ColourAdjust layer end to end and was tested against a real Director on 2026-10-29. Still open: keyframes at the playhead, and a few visual checks listed in [docs/DISGUISE_API.md §8](docs/DISGUISE_API.md).
+> **Status:** v0.1.0. It grades a live ColourAdjust layer end to end and was tested against a real Director on 2026-10-29. See [Known limitations](#known-limitations).
 
 ## Features
 
@@ -13,7 +13,7 @@ disguise can already grade with the ColourAdjust layer, but only through Designe
 - **Legal range:** clamp the output to a low and high level.
 - **Source:** toggle the layer between background and texture.
 - **Bypass:** switch the grade off and on to compare.
-- **Undo / Redo:** 50 steps, separate from Designer's undo.
+- **Undo / Redo:** 100 steps, separate from Designer's undo.
 - **Presets:** save, apply, rename and update grades. They're stored on the server and shared by every panel.
 - **Safe by default:** the panel starts locked after every connect and layer change. Hold **SAFE** for 1 second to go Live.
 - **Only the layer that's on screen:** the layer picker lists ColourAdjust layers live at the playhead. If the selected one stops being live, the panel locks. It never switches layers by itself.
@@ -89,6 +89,13 @@ Things the server does on its own:
 - **Sync:** changes made in Designer, or by another panel, show up on every panel live. With two people grading at once, the last change wins.
 
 There's no login: anyone who can open the page can grade. Keep the server on the show network.
+
+## Known limitations
+
+- **Keyframes:** the panel edits each field's first keyframe, the one at the layer start. A new ColourAdjust layer has sequencing off on every field, so that's the only key and this just works. If you keyframe a ColourAdjust field in Designer, the panel still edits that first key, not the one at the playhead. The panel never adds keyframes.
+- **Scopes:** the panel has none. Open Designer's Vectorscope or Waveform from the Feed view; Designer doesn't allow them to be opened remotely.
+- **Two graders at once:** the last change wins.
+- **Picture checks:** the Levels formula behind Lift / Gamma / Gain has not yet been checked against a picture ([docs/DISGUISE_API.md §8](docs/DISGUISE_API.md)).
 
 ## API budget
 
